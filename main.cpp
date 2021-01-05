@@ -4,6 +4,9 @@
 //
 //  Created by Gibson Ainge on 1/4/21.
 //
+//  Command line tool to find difference between seeds in Melee's RNG LCG
+//  Ported from original python implementation for performance
+//
 
 #include <iostream>
 #include <algorithm>
@@ -29,7 +32,6 @@ bool isQuit(string str) {
 bool charInRange(char c, char low, char high) {
     return c >= low && c <= high;
 }
-
 
 bool isValidHex(string str) {
     for (int i = 0; i < str.length(); i++) {
@@ -104,7 +106,7 @@ uint32_t calcSeedOffset(uint32_t seed, int offset) {
         cout << "(this will take a while)" << endl;
         uint32_t trailSeed = seed;
         
-        // Search for the offset using a delayed pointer
+        // Search for the offset by going around the world
         for (long i = 0; i < 0x100000000 - abs(offset); i++) {
             rng_adv(&trailSeed);
         }
@@ -116,6 +118,7 @@ uint32_t calcSeedOffset(uint32_t seed, int offset) {
 int findSeedDifference(uint32_t start, uint32_t target) {
     if (start == target) return 0;
     
+    // Establish pointers to search from both seeds to save time
     uint32_t seedFromStart = start;
     uint32_t seedFromTarget = target;
     uint32_t rollCount = 0;
@@ -124,7 +127,6 @@ int findSeedDifference(uint32_t start, uint32_t target) {
         rng_adv(&seedFromStart);
         rng_adv(&seedFromTarget);
         rollCount++;
-        
     } while (seedFromStart != target && seedFromTarget != start);
     
     // Check for standard advancement or wraparound
@@ -159,7 +161,7 @@ int main(int argc, const char * argv[]) {
         
         if (isQuit(userInput)) break;
         
-        // Check for offset
+        // Check for offset calc
         if (isOffset(userInput)) {
             // Parse input as a base 10 offset
             int offset = stoi(userInput);
@@ -171,12 +173,13 @@ int main(int argc, const char * argv[]) {
             cout << "\n0x" << hex << firstSeed << dec << (offset < 0 ? " - " : " + ") << abs(offset) << " => 0x" << hex << offsetSeed << dec << endl;
             
         } else {
-            // Perform standard seed to seed diff calc
+            // Perform standard seed-to-seed diff calc
             uint32_t secondSeed = stoul(userInput, 0, 16);
             
             cout << "\n0x" << hex << firstSeed << " => 0x" << hex << secondSeed << dec << endl;
             
             int diff = findSeedDifference(firstSeed, secondSeed);
+            
             cout << diff << endl;
         }
         
