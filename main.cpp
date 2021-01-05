@@ -93,6 +93,7 @@ string getUserHex(string prompt) {
 
 uint32_t calcSeedOffset(uint32_t seed, int offset) {
     if (offset >= 0) {
+        // Standard seed advance
         for (int i = 0; i < offset; i++) {
             rng_adv(&seed);
         }
@@ -100,16 +101,12 @@ uint32_t calcSeedOffset(uint32_t seed, int offset) {
         return seed;
     } else {
         // Gotta count from the bottom, yikes
-        uint32_t headerSeed = 1;
-        uint32_t trailSeed = 1;
+        cout << "(this will take a while)" << endl;
+        uint32_t trailSeed = seed;
         
-        // Search for the offset using a delayed seed
-        for (int i = 0; i < 0xFFFFFFFF; i++) {
-            rng_adv(&headerSeed);
-            if (i < abs(offset)) continue;
+        // Search for the offset using a delayed pointer
+        for (long i = 0; i < 0x100000000 - abs(offset); i++) {
             rng_adv(&trailSeed);
-            
-            if (headerSeed == seed) break;
         }
         
         return trailSeed;
